@@ -15,13 +15,13 @@ AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
-ACCEL_MAX = 1.5  # 1.5 m/s2
-ACCEL_MIN = -3.0 # 3   m/s2
+ACCEL_MAX = 1.8  # 1.8 m/s2
+ACCEL_MIN = -3.6 # 3.6   m/s2
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
 # Steer torque limits
 class SteerLimitParams:
-  STEER_MAX = 1500
+  STEER_MAX = 1800
   STEER_DELTA_UP = 10       # 1.5s time to peak torque
   STEER_DELTA_DOWN = 25     # always lower than 45 otherwise the Rav4 faults (Prius seems ok with 50)
   STEER_ERROR_MAX = 350     # max delta between torque cmd and torque motor
@@ -198,11 +198,25 @@ class CarController(object):
       apply_steer_req = 0
     else:
       apply_steer_req = 1
+    if enabled and rightLane_Depart and CS.v_ego > 12.5 and not CS.right_blinker_on:
+      apply_steer = self.last_steer + 3
+      apply_steer = min(apply_steer , 1800)
+      print "right"
+      print apply_steer
+      apply_steer_req = 1
+
     if not enabled and rightLane_Depart and CS.v_ego > 12.5 and not CS.right_blinker_on:
       apply_steer = self.last_steer + 3
       apply_steer = min(apply_steer , 800)
       #print "right"
       #print apply_steer
+      apply_steer_req = 1
+      
+    if enabled and leftLane_Depart and CS.v_ego > 12.5 and not CS.left_blinker_on:
+      apply_steer = self.last_steer - 3
+      apply_steer = max(apply_steer , -1800)
+      print "left"
+      print apply_steer
       apply_steer_req = 1
       
     if not enabled and leftLane_Depart and CS.v_ego > 12.5 and not CS.left_blinker_on:
@@ -211,7 +225,7 @@ class CarController(object):
       #print "left"
       #print apply_steer
       apply_steer_req = 1
-
+      
     self.steer_angle_enabled, self.ipas_reset_counter = \
       ipas_state_transition(self.steer_angle_enabled, enabled, CS.ipas_active, self.ipas_reset_counter)
     #print self.steer_angle_enabled, self.ipas_reset_counter, CS.ipas_active
